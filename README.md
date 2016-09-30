@@ -6,6 +6,10 @@ Put the source object into the first input, the transformed object into the seco
 
 The node will write detail attributes `scale`, `transform`, `rotation`. To get the transformed object, do `P = (s*P)*R + t`.
 
+
+
+To make things easier, use the `Match Transform` OTL. It optionally takes two *ordered* groups, which allows you to select a subset of points from your two objects. You have to select the points in the same order and then create groups with the `Create Ordered` flag enabled.
+
 ## License
 The code itself is under the MIT license; Eigen and libigl (the dependencies) are under the MPL2 license.
 
