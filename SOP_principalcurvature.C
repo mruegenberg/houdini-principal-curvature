@@ -17,7 +17,7 @@
 #define EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT 1
 
 #include <Eigen/Dense>
-#include <libigl/principal_curvature.h>
+#include <igl/principal_curvature.h>
 
 #include <cstdio>
 
@@ -99,19 +99,19 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
     gdp->getPrimitivesOfType(GA_PRIMPOLY, prims);
 
     r = 0;
-    for (auto it = prims.begin(); !it.atEnd(); ++it)
-    {
+    for(int i=0; i<prims.size(); ++i) {
+        const GA_Primitive *prim = prims(i);
         int s = 0;
-        if(it->getPointRange(NULL).size() > 3) {
+        if(prim->getPointRange(NULL).getEntries() > 3) {
             addError(SOP_MESSAGE, "Mesh is not triangulated.");
             return error();
         }
-        F.row(r) = Eigen::Vector3i(it->getPointIndex(0), it->getPointIndex(1), it->getPointIndex(2));
+        F.row(r) = Eigen::Vector3i(prim->getPointIndex(0), prim->getPointIndex(1), prim->getPointIndex(2));
         r++;
     }
 
-    MatrixXd PD1,PD2;
-    VectorXd PV1,PV2;
+    Eigen::MatrixXd PD1,PD2;
+    Eigen::VectorXd PV1,PV2;
     igl::principal_curvature(V,F,PD1,PD2,PV1,PV2);
 
     {
@@ -125,10 +125,11 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
         GA_RWHandleF whandle(aoff.getAttribute());
 
         int i = 0;
+		GA_Offset ptoff;
         GA_FOR_ALL_PTOFF(gdp1, ptoff)
     	{
             double pv1 = PV1(i);
-    	    whandle.set(ptoff, length);
+    	    whandle.set(ptoff, pv1);
     	    i++;
     	}
     }
@@ -144,10 +145,11 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
         GA_RWHandleF whandle(aoff.getAttribute());
 
         int i = 0;
+		GA_Offset ptoff;
         GA_FOR_ALL_PTOFF(gdp1, ptoff)
         {
             double pv1 = PV2(i);
-            whandle.set(ptoff, length);
+            whandle.set(ptoff, pv1);
             i++;
         }
     }
@@ -161,11 +163,12 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
             aoff = gdp->addFloatTuple(GA_ATTRIB_POINT, aname, 3);
         }
         GA_RWHandleV3 whandle(aoff.getAttribute());
-
+		
+		GA_Offset ptoff;
         int i = 0;
         GA_FOR_ALL_PTOFF(gdp1, ptoff)
         {
-            Eigen::Vector3d pv1 = PV1.row(i)
+            Eigen::Vector3d pv1 = PD1.row(i);
             whandle.set(ptoff, UT_Vector3(pv1.x(), pv1.y(), pv1.z()));
             i++;
         }
@@ -180,11 +183,12 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
             aoff = gdp->addFloatTuple(GA_ATTRIB_POINT, aname, 3);
         }
         GA_RWHandleV3 whandle(aoff.getAttribute());
-
+		
+		GA_Offset ptoff;
         int i = 0;
         GA_FOR_ALL_PTOFF(gdp1, ptoff)
         {
-            Eigen::Vector3d pv2 = PV2.row(i)
+            Eigen::Vector3d pv2 = PD2.row(i);
             whandle.set(ptoff, UT_Vector3(pv2.x(), pv2.y(), pv2.z()));
             i++;
         }
