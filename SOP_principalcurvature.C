@@ -78,14 +78,18 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
     OP_AutoLockInputs inputs(this);
     if (inputs.lock(context) >= UT_ERROR_ABORT)
         return error();
+    
+    printf("locked");
 
     duplicateSource(0, context);
+    printf("duplicated");
 
     const GU_Detail *gdp1 = inputGeo(0);
 
     int pts1 = gdp1->getNumPoints();
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(pts1,3);
     Eigen::Matrix<int, Eigen::Dynamic, 3> F(pts1,3);
+    printf("built matrices %d", pts1);
 
     int r = 0;
     for (GA_Iterator it(gdp1->getPointRange(NULL)); !it.atEnd(); ++it) // NULL can be replaced by a group
@@ -94,6 +98,7 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
         V.row(r) = Eigen::Vector3d(p.x(), p.y(), p.z());
         r++;
     }
+    printf("set rows V");
 
     UT_Array< const GA_Primitive * >prims;
     gdp->getPrimitivesOfType(GA_PRIMPOLY, prims);
@@ -109,10 +114,17 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
         F.row(r) = Eigen::Vector3i(prim->getPointIndex(0), prim->getPointIndex(1), prim->getPointIndex(2));
         r++;
     }
+    printf("set faces");
 
-    Eigen::MatrixXd PD1,PD2;
-    Eigen::VectorXd PV1,PV2;
+    // Eigen::MatrixXd PD1,PD2;
+    Eigen::Matrix<double, Eigen::Dynamic, 3> PD1(pts1,3);
+    Eigen::Matrix<double, Eigen::Dynamic, 3> PD2(pts1,3);
+    // Eigen::VectorXd PV1,PV2;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> PV1(pts1,1);
+    Eigen::Matrix<double, Eigen::Dynamic, 1> PV2(pts1,1);
+    printf("output matrices");
     igl::principal_curvature(V,F,PD1,PD2,PV1,PV2);
+    printf("calc princ curv");
 
     {
         UT_String                    aname = "maxcurvature";
@@ -133,6 +145,7 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
     	    i++;
     	}
     }
+    printf("written max curv");
 
     {
         UT_String                    aname = "mincurvature";
