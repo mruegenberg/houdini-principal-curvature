@@ -11,9 +11,20 @@ A Houdini DSO that extracts the minimal and maximal principal curvature directio
 ## Usage
 The node takes just one input. It writes `min_principalcurvature` and `max_principalcurvature` point attributes.
 
-The input mesh must be triangular (e.g using the `Divide` SOP).
+The input mesh must be triangular (e.g using the *Divide* or *Remesh* SOPs).
+
+## Dependencies
+
+- [libigl](http://libigl.github.io/libigl/) performs the actual principal curvature direction determination
+
+- [Eigen](http://eigen.tuxfamily.org) is used heavily by libigl
 
 ## License
-The code itself is under the MIT license; Eigen and libigl (the dependencies) are under the MPL2 license.
+The code itself is under the MIT and MPL2 licenses.
+Eigen and libigl (the dependencies) are under the MPL2 license.
+
+In short, this means that commercial use within your company is no problem at all.
+
+If you want to redistribute this, you have to provide some notice on where to find the original source code.
 
 
