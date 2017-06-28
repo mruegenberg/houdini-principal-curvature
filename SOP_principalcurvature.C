@@ -62,69 +62,65 @@ SOP_Principalcurvature::myConstructor(OP_Network *net, const char *name, OP_Oper
 SOP_Principalcurvature::SOP_Principalcurvature(OP_Network *net, const char *name, OP_Operator *op)
     : SOP_Node(net, name, op)
 {
+    // this indicates that we manually indicate which attributes changed.
+    // leaving this out is less efficient, but more robust.
     mySopFlags.setManagesDataIDs(true);
 }
 
-SOP_Principalcurvature::~SOP_Principalcurvature() {}
+SOP_Principalcurvature::~SOP_Principalcurvature() { ; }
 
 OP_ERROR
 SOP_Principalcurvature::cookMySop(OP_Context &context)
 {
-    fpreal t = context.getTime();
-
     // We must lock our inputs before we try to access their geometry.
     // OP_AutoLockInputs will automatically unlock our inputs when we return.
     // NOTE: Don't call unlockInputs yourself when using this!
     OP_AutoLockInputs inputs(this);
     if (inputs.lock(context) >= UT_ERROR_ABORT)
         return error();
-    
-    printf("locked");
 
     duplicateSource(0, context);
-    printf("duplicated");
 
     const GU_Detail *gdp1 = inputGeo(0);
 
-    int pts1 = gdp1->getNumPoints();
-    Eigen::Matrix<double, Eigen::Dynamic, 3> V(pts1,3);
-    Eigen::Matrix<int, Eigen::Dynamic, 3> F(pts1,3);
-    printf("built matrices %d", pts1);
+    // translate Houdini geo to Eigen matrices
+    int ptCount = gdp1->getNumPoints();
+    int faceCount = gdp1->getNumPrimitives();
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(ptCount,3); // point coords
+    Eigen::Matrix<int, Eigen::Dynamic, 3> F(faceCount,3); // point indices
 
-    int r = 0;
-    for (GA_Iterator it(gdp1->getPointRange(NULL)); !it.atEnd(); ++it) // NULL can be replaced by a group
     {
-        UT_Vector3 p = gdp1->getPos3(*it);
-        V.row(r) = Eigen::Vector3d(p.x(), p.y(), p.z());
-        r++;
-    }
-    printf("set rows V");
-
-    UT_Array< const GA_Primitive * >prims;
-    gdp->getPrimitivesOfType(GA_PRIMPOLY, prims);
-
-    r = 0;
-    for(int i=0; i<prims.size(); ++i) {
-        const GA_Primitive *prim = prims(i);
-        int s = 0;
-        if(prim->getPointRange(NULL).getEntries() > 3) {
-            addError(SOP_MESSAGE, "Mesh is not triangulated.");
-            return error();
+        int r = 0;
+        for (GA_Iterator it(gdp1->getPointRange(NULL)); !it.atEnd(); ++it) // NULL can be replaced by a group
+        {
+            UT_Vector3 p = gdp1->getPos3(*it);
+            V.row(r) = Eigen::Vector3d(p.x(), p.y(), p.z());
+            r++;
         }
-        F.row(r) = Eigen::Vector3i(prim->getPointIndex(0), prim->getPointIndex(1), prim->getPointIndex(2));
-        r++;
+        
+        UT_Array< const GA_Primitive * >prims;
+        gdp->getPrimitivesOfType(GA_PRIMPOLY, prims);
+        
+        r = 0;
+        for(int i=0; i<prims.size(); ++i) {
+            printf("set prim %d\n", i);
+            const GA_Primitive *prim = prims(i);
+            if(prim->getPointRange(NULL).getEntries() > 3) {
+                addError(SOP_MESSAGE, "Mesh is not triangulated.");
+                return error();
+            }
+            F.row(r) = Eigen::Vector3i(prim->getPointIndex(0), prim->getPointIndex(1), prim->getPointIndex(2));
+            r++;
+        }
     }
-    printf("set faces");
 
     // Eigen::MatrixXd PD1,PD2;
-    Eigen::Matrix<double, Eigen::Dynamic, 3> PD1(pts1,3);
-    Eigen::Matrix<double, Eigen::Dynamic, 3> PD2(pts1,3);
+    Eigen::Matrix<double, Eigen::Dynamic, 3> PD1(ptCount,3);
+    Eigen::Matrix<double, Eigen::Dynamic, 3> PD2(ptCount,3);
     // Eigen::VectorXd PV1,PV2;
-    Eigen::Matrix<double, Eigen::Dynamic, 1> PV1(pts1,1);
-    Eigen::Matrix<double, Eigen::Dynamic, 1> PV2(pts1,1);
-    printf("output matrices");
+    Eigen::Matrix<double, Eigen::Dynamic, 1> PV1(ptCount,1);
+    Eigen::Matrix<double, Eigen::Dynamic, 1> PV2(ptCount,1);
     igl::principal_curvature(V,F,PD1,PD2,PV1,PV2);
-    printf("calc princ curv");
 
     {
         UT_String                    aname = "maxcurvature";
@@ -145,7 +141,6 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
     	    i++;
     	}
     }
-    printf("written max curv");
 
     {
         UT_String                    aname = "mincurvature";

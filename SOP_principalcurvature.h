@@ -7,11 +7,10 @@ namespace OYW {
 class SOP_Principalcurvature : public SOP_Node
 {
 public:
-	SOP_Principalcurvature(OP_Network *net, const char *name, OP_Operator *op);
+    SOP_Principalcurvature(OP_Network *net, const char *name, OP_Operator *op);
     virtual ~SOP_Principalcurvature();
 
     static OP_Node *myConstructor(OP_Network*, const char *, OP_Operator *);
-
     static PRM_Template myTemplateList[];
 protected:
     virtual OP_ERROR cookMySop(OP_Context &context);

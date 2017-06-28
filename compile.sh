@@ -1,6 +1,6 @@
 #! /bin/bash
 if [ -z "$HFS" ]; then
-    export HFS=/opt/hfs15.5.673
+    export HFS=/opt/hfs16.0.600
     export PATH=$HFS/bin:$PATH
     export CUR=`pwd`
     cd $HFS
@@ -8,11 +8,16 @@ if [ -z "$HFS" ]; then
     cd $CUR
 fi
 
-# note: for Houdini 15.5, you need GCC 4.8!
+# HDK operators will break/crash in unexpected ways if the compiler version is not
+# the same as used for Houdini itself (GCC 4.8 for Houdini 15 and 16.)
+# The correct version can be seen in Help > About Houdini
+export CC=gcc-4.8
+export CXX=g++-4.8
+
+export HCUSTOM_CFLAGS="-fopenmp" # much faster
 
 # without debug info
-# hcustom -e -i ./dso SOP_principalcurvature.C -I eigen -I libigl/include
+hcustom -e -i ./dso SOP_principalcurvature.C -I eigen -I libigl/include
 
 # with debug info
-hcustom -e -i ./dso -g SOP_principalcurvature.C -I eigen -I libigl/include
-
+# hcustom -e -i ./dso -g SOP_principalcurvature.C -I eigen -I libigl/include
