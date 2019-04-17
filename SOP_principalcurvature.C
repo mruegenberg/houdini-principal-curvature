@@ -103,7 +103,7 @@ SOP_Principalcurvature::cookMySop(OP_Context &context)
         
         r = 0;
         for(int i=0; i<prims.size(); ++i) {
-            printf("set prim %d\n", i);
+            // printf("set prim %d\n", i);
             const GA_Primitive *prim = prims(i);
             if(prim->getPointRange(NULL).getEntries() > 3) {
                 addError(SOP_MESSAGE, "Mesh is not triangulated.");
